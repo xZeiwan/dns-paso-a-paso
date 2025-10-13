@@ -1,14 +1,14 @@
-# Vagrantfile para la práctica
+# Archivo Vagrantfile
 Vagrant.configure("2") do |config|
 
   # Imagen base del sistema operativo
-  config.vm.box = "ubuntu/jammy64"
+  config.vm.box = "debian/bullseye64"
 
   # Nombre interno de la máquina virtual
   config.vm.hostname = "dns-server"
 
   # Red privada con IP fija
-  config.vm.network "private_network", ip: "192.168.56.10"
+  config.vm.network "private_network", ip: "192.168.58.10"
 
   # Después de crear la máquina, ejecutar el script de aprovisionamiento (bootstrap.sh)
   config.vm.provision "shell", path: "bootstrap.sh", privileged: true
