@@ -1,0 +1,13 @@
+;
+; Zona inversa 192.168.58.0/24
+;
+$TTL 86400
+@   IN  SOA debian.enrique.test. admin.enrique.test. (
+        2025101401 ; Serial
+        3600       ; Refresh
+        1800       ; Retry
+        604800     ; Expire
+        86400 )    ; Negative Cache TTL
+;
+@       IN  NS      debian.enrique.test.
+10      IN  PTR     debian.enrique.test.
