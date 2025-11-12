@@ -2,12 +2,16 @@
 ; Zona enrique.test
 ;
 $TTL 86400
-@   IN  SOA debian.enrique.test. admin.enrique.test. (
-        2025101401 ; Serial (AAAAMMDDNN)
+@   IN  SOA ns.enrique.test. admin.enrique.test. (
+        2025101402 ; Serial (AAAAMMDDNN)
         3600       ; Refresh
         1800       ; Retry
         604800     ; Expire
         86400 )    ; Negative Cache TTL
 ;
-@       IN  NS      debian.enrique.test.
-debian  IN  A       192.168.58.10
+
+@       IN  NS      ns.enrique.test.
+ns      IN  A       192.168.58.10
+
+; Alias FTP
+ftp     IN  CNAME   ns.enrique.test.
