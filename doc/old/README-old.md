@@ -264,3 +264,195 @@ Se ha generado un certificado autofirmado y se ha probado tanto el acceso de usu
 **Probar conexión segura anónima**
 
 ![named.conf.local](images/5-anonymous-denegado.PNG)
+
+# Práctica 2.1.1 — Instalación y configuración del servidor web Nginx
+
+## 1. Introducción
+
+Todas las configuraciones del servidor web utilizarán el dominio enrique.test
+
+## 2. Instalación del servidor web Nginx
+
+Primero actualizamos los repositorios del sistema con sudo apt update
+
+Para instalar el servidor web Nginx (versión usada en esta práctica: 1.18.0), usamos sudo apt install nginx -y
+
+**Comprobar que está instalado, activo y funcionando:**
+
+![named.conf.local](images/2-verificar-nginx.png)
+
+## 3. Creación de las carpetas del sitio web
+
+Para alojar el contenido del dominio `enrique.test`, se creó la estructura estándar dentro de `/var/www`:
+
+bash
+sudo mkdir -p /var/www/enrique.test/html
+
+A continuación, se clonó el sitio web de ejemplo dentro de la carpeta html:
+sudo chown -R www-data:www-data /var/www/enrique.test/html
+sudo chmod -R 755 /var/www/enrique.test
+
+Finalmente, se accedió desde el navegador con http://192.168.58.10:
+
+![named.conf.local](images/3-welcome-nginx.png)
+
+## 4. Configuración del servidor web Nginx para el dominio `enrique.test`
+
+## 4.1 Crear el archivo de configuración del sitio web
+
+Para servir nuestro sitio web personalizado, creamos un bloque de servidor dentro de
+`/etc/nginx/sites-available`:
+sudo nano /etc/nginx/sites-available/enrique.test
+
+**Archivo sites-avaible**
+
+![named.conf.local](images/4.1-sites-available.png)
+
+## 4.2 Crear el enlace simbólico en sites-enabled
+
+Esto habilita el sitio: sudo ln -s /etc/nginx/sites-available/enrique.test /etc/nginx/sites-enabled/
+
+Se puede comprobar con: ls -l /etc/nginx/sites-enabled/
+
+**Enlace simbólico creado**
+
+![named.conf.local](images/4.2-enlace-simbolico.png)
+
+## 4.3 Comprobar que no hay errores en Nginx
+
+Comprobamos que no hay errores:
+
+**Comprobación errores**
+
+![named.conf.local](images/4.3-verificar-nginx.png)
+
+## 4.4 Reiniciar Nginx
+
+sudo systemctl restart nginx
+sudo systemctl status nginx
+
+**Foto de reinicio**
+
+![named.conf.local](images/4.4-reiniciar-nginx.png)
+
+## 4.5 Comprobación con DNS o /etc/hosts
+
+Lo que hice fue Editar el archivo hosts y añadir: 
+192.168.58.10    enrique.test
+
+**Comprobar funcionamiento**
+
+![named.conf.local](images/4.5-comprobar-dns.png)
+
+## 4.6 Comprobar los logs
+
+Acceso log: sudo tail -n 20 /var/log/nginx/access.log
+
+Errores: sudo tail -n 20 /var/log/nginx/error.log
+
+**Acceso y errores**
+
+![named.conf.local](images/4.6-comprobar-logs.png)
+
+# Práctica 2.1.2: Instalación y configuración de servidor web Nginx con Docker
+
+## 3. Creación de la estructura de carpetas del sitio web (Docker)
+
+En la máquina anfitriona se preparó la estructura de directorios para alojar el contenido del sitio web `enrique.test` y la configuración personalizada de Nginx:
+
+mkdir -p ~/nginx/enrique.test/html
+mkdir -p ~/nginx/enrique.test/conf
+
+**Estructura y clonación de repositorio**
+
+![named.conf.local](images/nginxDocker/3-creacion-estructura.PNG)
+
+## 4.1 Configuración de servidor web NGINX con Docker
+
+Se creó la configuración personalizada de Nginx en el archivo:
+
+**Archivo nginx.conf**
+
+![named.conf.local](images/nginxDocker/4.1-nginx.conf.PNG)
+
+## 4.2. Crear y ejecutar el contenedor Docker
+
+Creamos un contenedor Docker que ejecute Nginx:
+
+docker run -d \
+  --name nginx-example \
+  -p 80:80 \
+  -v ~/nginx/example.test/html:/usr/share/nginx/html \
+  -v ~/nginx/example.test/conf/nginx.conf:/etc/nginx/conf.d/default.conf \
+  nginx:latest
+
+**Ejecutar el contenedor Docker**
+
+![named.conf.local](images/nginxDocker/4.2-contenedor-docker.PNG)
+
+**Confirmar que el contenedor está corriendo**
+
+![named.conf.local](images/nginxDocker/4.2-comprobar.PNG)
+
+**Ver logs del contenedor**
+
+![named.conf.local](images/nginxDocker/4.2-logs.PNG)
+
+## 5. Comprobación del funcionamiento
+
+Para comprobar que el servidor está funcionando y sirviendo páginas correctamente, accedemos al cliente con http://localhost
+
+**Comprobar funcionamiento**
+
+![named.conf.local](images/nginxDocker/5-welcome.PNG)
+
+## 5.1.1 Editar archivo hosts
+
+El objetivo es asociar 127.0.0.1 con el dominio enrique.test para que el navegador sepa a dónde enviar las peticiones.
+Hay que añadir nuestra entrada de dominio al archivo hosts:
+
+**Añadir entrada**
+
+![named.conf.local](images/nginxDocker/5.1.1-hosts.PNG)
+
+**Comprobar funcionamiento**
+
+![named.conf.local](images/nginxDocker/5.1.1-comprobar.PNG)
+
+## 5.2. Comprobar registros del servidor
+
+Comprobamos los logs con el comando docker: docker logs -f nginx-example
+
+**Logs en tiempo real**
+
+![named.conf.local](images/nginxDocker/5.2-logs-servidor.PNG)
+
+## 6. Gestión del contenedor Docker
+
+Para administrar el contenedor Docker que ejecuta Nginx se utilizan varios comandos básicos:
+Para detener el contenedor utilizamos docker stop nginx-enrique, lo que detiene su ejecución sin borrarlo.
+Si necesitamos reiniciarlo, ya sea para volver a ponerlo en marcha o para aplicar cambios en la configuración, usamos docker restart nginx-enrique.
+
+Cuando es necesario modificar el servidor web, simplemente editamos el archivo ~/nginx/enrique.test/conf/nginx.conf desde la máquina anfitriona y reiniciamos el contenedor para que cargue los cambios.
+Finalmente, si el contenedor ya no es necesario, podemos eliminarlo completamente ejecutando docker stop nginx-enrique seguido de docker rm nginx-enrique.
+
+**Gestión comandos**
+
+![named.conf.local](images/nginxDocker/6-gestion-contenedor.PNG)
+
+## 7. Alternativa: Uso de Docker Compose
+
+Como alternativa al uso directo del comando docker run, se puede utilizar Docker Compose para definir y gestionar el contenedor de Nginx mediante un archivo declarativo.
+En la máquina anfitriona se creó el archivo docker-compose.yml dentro del directorio del proyecto con la siguiente configuración:
+
+**Configuración docker-compose.yml**
+
+![named.conf.local](images/nginxDocker/7-docker-compose.PNG)
+
+Docker Compose monta las carpetas locales en el contenedor, mapea el puerto 80 y aplica automáticamente la configuración del servidor web.
+
+Los logs se visualizan mediante docker-compose logs -f, y para detener y eliminar los contenedores creados por la composición se usa docker-compose down:
+
+**Ver y eliminar logs**
+
+![named.conf.local](images/nginxDocker/7-logs.PNG)
