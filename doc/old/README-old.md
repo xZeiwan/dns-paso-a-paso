@@ -456,3 +456,238 @@ Los logs se visualizan mediante docker-compose logs -f, y para detener y elimina
 **Ver y eliminar logs**
 
 ![named.conf.local](images/nginxDocker/7-logs.PNG)
+
+# Práctica 2.2: Autenticación en Nginx con Docker
+
+## 1.1 Paquetes necesarios
+
+Para generar contraseñas cifradas se utilizó la imagen stakater/ssl-certs-generator, descargada con:
+docker pull stakater/ssl-certs-generator
+
+**Imagen de descarga**
+
+![named.conf.local](images/2.2-nginx-docker/1.1-instalacion.JPG)
+
+## 1.2. Creación de usuarios y contraseñas para el acceso web
+
+Para habilitar autenticación básica en Nginx se creó un archivo htpasswd dentro de la estructura del sitio.
+
+Tras la generación de los hashes, el archivo quedó de la siguiente forma:
+
+![named.conf.local](images/2.2-nginx-docker/1.2-clave.JPG)
+
+## 1.3. Configurando el contenedor Nginx para usar autenticación básica
+
+En este apartado se ha configurado el servidor Nginx (que se ejecutará en Docker) para proteger el acceso a la página web mediante autenticación HTTP Basic. He usado Git Bash.
+
+**Edición del archivo de configuración**
+
+![named.conf.local](images/2.2-nginx-docker/1.3-conf.JPG)
+
+**Montaje del archivo de configuración y del htpasswd dentro del contenedor**
+
+![named.conf.local](images/2.2-nginx-docker/1.3-nuevo-contenedor.JPG)
+
+## 1.4. Probando la nueva configuración
+
+Desde el navegador se accedió a http://enrique.test:8080/
+
+El navegador muestra un cuadro de autenticación solicitando usuario y contraseña.
+
+**Formulario login**
+
+![named.conf.local](images/2.2-nginx-docker/1.4-login.JPG)
+
+**Acceso permitido**
+
+![named.conf.local](images/2.2-nginx-docker/1.4-login-exito.JPG)
+
+## 2. Tareas
+
+## 2.1 T.1. Análisis de Logs
+
+Se intentó acceder primero con un usuario erróneo (marta) y luego con el usuario correcto (enrique).
+
+Se ha utilizado el comando docker logs nginx-enrique para visualizar los registros.
+
+¿Dónde podemos ver los errores de usuario inválido o no encontrado? Se visualizan en el log de errores (error.log). En la captura se observa la línea: [error] ... user "marta" was not found in "/etc/nginx/.htpasswd"
+
+¿Dónde podemos ver el número de error que os aparecía antes? Se visualiza en el log de acceso (access.log). Al cancelar la autenticación o fallar el usuario, el servidor registra el código de estado HTTP 401 (Unauthorized). En la captura se observa: "GET / HTTP/1.1" 401
+
+**Intento de acceso con marta**
+
+![named.conf.local](images/2.2-nginx-docker/2.1-intento-login-marta.JPG)
+
+**Intento de acceso con enrique**
+
+![named.conf.local](images/2.2-nginx-docker/2.1-intento-login-enrique.JPG)
+
+## 2.2 T2: Autenticación específica en /contact.html
+
+Se modificó la configuración de Nginx para eliminar la autenticación del directorio raíz y aplicarla únicamente a la sección `contact.html`.
+
+**Modificación de enrique.test.conf**
+Se editaron las directivas de ubicación (`location`) en el archivo de configuración:
+
+![named.conf.local](images/2.2-nginx-docker/2.2-contacto.JPG)
+
+**Comprobaciones**
+
+Acceso a la raíz (/): El navegador muestra la página de inicio sin solicitar credenciales, permitiendo el acceso público.
+
+![named.conf.local](images/2.2-nginx-docker/2.2-entrada-sin-clave.JPG)
+
+Acceso a /contact.html: Al intentar acceder a esta sección específica, el navegador solicita usuario y contraseña.
+
+![named.conf.local](images/2.2-nginx-docker/2.2-entrada-con-clave.JPG)
+
+![named.conf.local](images/2.2-nginx-docker/2.2-contacto.JPG)
+
+## 2.3 T2: Combinación de autenticación básica y restricción de IP
+Se configuró Nginx para que, desde la máquina anfitriona, sea obligatorio cumplir dos condiciones simultáneamente para acceder al directorio raíz: tener una IP permitida y autenticarse con usuario y contraseña.
+
+Se utilizó la directiva satisfy all para combinar la restricción de IP (allow 172.17.0.1) con la autenticación básica (auth_basic)
+
+![named.conf.local](images/2.2-nginx-docker/2.3-conf.JPG)
+
+Comprobaciones
+
+Acceso desde IP permitida: Al acceder desde la IP autorizada (172.17.0.1), Nginx valida la primera condición y solicita las credenciales para cumplir la segunda.
+
+![named.conf.local](images/2.2-nginx-docker/2.3-error.JPG)
+
+![named.conf.local](images/2.2-nginx-docker/2.3-error1.JPG)
+
+## 3.1 T1: Denegación de acceso a la IP anfitriona
+Se configuró Nginx para prohibir explícitamente el acceso desde la dirección IP de la máquina anfitriona (172.17.0.1) al directorio raíz del sitio web.
+Se utilizó la directiva deny para la IP detectada en los logs:
+
+![named.conf.local](images/2.2-nginx-docker/3.1-conf.JPG)
+
+Página de error: Al intentar acceder desde el navegador, el servidor responde con un error 403 Forbidden.
+
+![named.conf.local](images/2.2-nginx-docker/3.1-error.JPG)
+
+## 3.2 T2: Exigencia simultánea de IP y Usuario válido
+Se configuró el servidor para aplicar una política de seguridad estricta mediante la directiva satisfy all. Esto obliga al cliente a cumplir dos condiciones simultáneamente: conectarse desde una IP autorizada (172.17.0.1) y autenticarse con un usuario válido.
+Se combinaron las directivas allow/deny con auth_basic bajo la regla satisfy all:
+
+![named.conf.local](images/2.2-nginx-docker/3.2-conf.JPG)
+
+Al acceder desde la máquina anfitriona (IP válida), el servidor solicita credenciales. Al introducir el usuario y contraseña correctos, se permite el acceso al sitio.
+
+![named.conf.local](images/2.2-nginx-docker/3.2-acceso.JPG)
+
+![named.conf.local](images/2.2-nginx-docker/3.2-acceso-index.JPG)
+
+# Práctica 2.2: Autenticación en Nginx
+Se configuró el servidor Nginx en la máquina virtual para restringir el acceso al sitio web enrique.test mediante autenticación básica.
+
+## 1.2 Creación de credenciales
+Se utilizó la herramienta openssl para generar las contraseñas cifradas y almacenarlas en el fichero /etc/nginx/.htpasswd.
+
+![named.conf.local](images/2.2-nginx/1.1-paquetes.JPG)
+
+Contenido del fichero generado:
+
+![named.conf.local](images/2.2-nginx/1.2-clave.JPG)
+
+## 1.3 Configuración de Nginx para autenticación básica
+Se editó el archivo de configuración del sitio /etc/nginx/sites-available/enrique.test para proteger el directorio raíz.
+
+![named.conf.local](images/2.2-nginx/1.3-conf.JPG)
+
+Se reinició Nginx para cargar la nueva configuración:
+
+![named.conf.local](images/2.2-nginx/1.3-reinicio.JPG)
+
+¡Estupendo! Ya tienes el servidor funcionando como un reloj: pide contraseña y muestra tu web correcta.
+
+Aquí tienes la documentación del punto 1.4, redactada para que encaje con tus capturas (Login + Web funcionando).
+
+## 1.4 Probando la nueva configuración
+Una vez reiniciado el servicio Nginx, se realizaron las comprobaciones de acceso desde el navegador del equipo anfitrión para verificar tanto la seguridad como el correcto despliegue del sitio web.
+
+Al acceder a http://enrique.test, el servidor interrumpe la carga y solicita credenciales de acceso mediante una ventana emergente, confirmando que la directiva auth_basic está activa.
+
+![named.conf.local](images/2.2-nginx/1.4-login.JPG)
+
+El servidor autoriza la conexión y sirve correctamente el archivo index.html ubicado en /var/www/enrique.test/html.
+
+![named.conf.local](images/2.2-nginx/1.4-login-correcto.JPG)
+
+## 2.1 T1: Comprobación de logs de autenticación
+Se realizaron pruebas de acceso con usuarios inválidos y válidos para verificar cómo Nginx registra estos eventos en sus archivos de log.
+
+Pruebas realizadas:
+
+Intento de acceso con usuario inexistente (pepe) y cancelación del login.
+
+![named.conf.local](images/2.2-nginx/2.1-error.JPG)
+
+![named.conf.local](images/2.2-nginx/2.1-error1.JPG)
+
+Intento de acceso con usuario válido (enrique).
+
+![named.conf.local](images/2.2-nginx/2.1-exito1.JPG)
+
+![named.conf.local](images/2.2-nginx/2.1-exito.JPG)
+
+## 2.2 T2: Autenticación específica en /contact.html
+Se modificó la configuración de Nginx para eliminar la autenticación del directorio raíz y aplicarla únicamente a la sección contact.html, permitiendo que el resto del sitio web sea público.
+
+Se editaron las directivas de ubicación (location) en el archivo de configuración para proteger solo el recurso específico:
+
+![named.conf.local](images/2.2-nginx/2.2-conf.JPG)
+
+Acceso a la raíz (/): El navegador muestra la página de inicio sin solicitar credenciales, permitiendo el acceso público.
+
+![named.conf.local](images/2.2-nginx/2.2-acceso.JPG)
+
+Acceso a /contact.html: Al intentar acceder a la sección de contacto, el navegador solicita usuario y contraseña.
+
+![named.conf.local](images/2.2-nginx/2.2-acceso-contact.JPG)
+
+Tras autenticarse correctamente, se permite el acceso a la página de contacto.
+
+![named.conf.local](images/2.2-nginx/2.2-acceso-contact1.JPG)
+
+## 2.3 Combinación de la autenticación básica con la restricción de acceso por IP
+Se configuró el servidor Nginx para aumentar la seguridad exigiendo el cumplimiento de dos condiciones simultáneas para acceder al directorio raíz.
+
+Se editó el archivo del sitio web /etc/nginx/sites-available/enrique.test. Dentro del bloque location /, se utilizó la directiva satisfy all. Esto obliga a que el cliente satisfaga tanto las reglas de control de acceso (allow/deny) como las de autenticación (auth_basic).
+
+![named.conf.local](images/2.2-nginx/2.3-conf.JPG)
+
+Comprobaciones:
+Al acceder desde la máquina anfitriona (cuya IP 192.168.58.1 está permitida), Nginx valida la primera condición y procede a solicitar la segunda: el usuario y la contraseña.
+
+![named.conf.local](images/2.2-nginx/2.3-acceso.JPG)
+
+Tras introducir las credenciales correctas, el acceso al sitio web es concedido.
+
+![named.conf.local](images/2.2-nginx/2.3-acceso1.JPG)
+
+## 3.1 T1: Denegación de acceso a la IP anfitriona
+Se configuró Nginx en la máquina virtual para denegar explícitamente el acceso desde la dirección IP de la máquina anfitriona (192.168.58.1) al directorio raíz del sitio web.
+
+![named.conf.local](images/2.2-nginx/3.1-conf.JPG)
+
+Al intentar acceder al sitio desde el navegador del anfitrión, el servidor deniega el acceso mostrando el error 403 Forbidden.
+
+![named.conf.local](images/2.2-nginx/3.1-error.JPG)
+
+Se verificó el archivo /var/log/nginx/error.log, donde se registra el bloqueo con el mensaje access forbidden by rule
+
+![named.conf.local](images/2.2-nginx/3.1-error-log.JPG)
+
+## 3.2 T2: Exigencia simultánea de IP y Usuario válido
+Se configuró el servidor utilizando la directiva satisfy all. Esta configuración obliga a que el cliente cumpla dos condiciones simultáneamente para acceder: conectarse desde una IP autorizada y autenticarse con un usuario válido.
+
+![named.conf.local](images/2.2-nginx/3.2-conf.JPG)
+
+Al acceder desde la máquina anfitriona (cuya IP es válida), el servidor solicita credenciales. Tras introducir el usuario y contraseña correctos, se permite el acceso al contenido del sitio sin problemas.
+
+![named.conf.local](images/2.2-nginx/3.2-acceso.JPG)
+
+![named.conf.local](images/2.2-nginx/3.2-acceso1.JPG)
