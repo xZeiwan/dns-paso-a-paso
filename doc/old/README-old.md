@@ -691,3 +691,126 @@ Al acceder desde la máquina anfitriona (cuya IP es válida), el servidor solici
 ![named.conf.local](images/2.2-nginx/3.2-acceso.JPG)
 
 ![named.conf.local](images/2.2-nginx/3.2-acceso1.JPG)
+
+# Práctica 2.3: Acceso seguro con Nginx (Docker)
+En esta práctica se configurará el servidor web Nginx para soportar conexiones seguras (HTTPS) mediante certificados SSL/TLS autofirmados.
+
+## 1.1 Prerrequisitos (Resolución DNS)
+Para simular un entorno real con subdominios, es necesario que el equipo anfitrión resuelva tanto el dominio principal como el subdominio www hacia la dirección IP local (donde se ejecuta Docker).
+
+Se editó el archivo C:\Windows\System32\drivers\etc\hosts en la máquina anfitriona añadiendo la siguiente línea:
+
+127.0.0.1    enrique.test www.enrique.test
+
+Esto permite acceder al servidor utilizando ambos nombres de dominio.
+
+## 2. Configuración de Nginx
+## 2.1 Nombre de servidor
+
+Se modificó el archivo de configuración de Nginx (~/nginx/enrique.test/conf/enrique.test.conf) para que el servidor responda a ambos nombres de dominio.
+
+![named.conf.local](images/2.3-nginx/2.1-conf.JPG)
+
+## 3. Generar un certificado autofirmado
+Se generaron la clave privada y el certificado SSL necesarios para habilitar HTTPS en el servidor. Se utilizó la imagen Docker stakater/ssl-certs-generator pasando las variables de entorno para el dominio enrique.test.
+
+Comandos ejecutados:
+
+![named.conf.local](images/2.3-nginx/3.certificado.JPG)
+
+## 4. Configuración de Nginx con SSL
+Se modificó el archivo de configuración enrique.test.conf para habilitar la escucha en el puerto 443 (HTTPS) y especificar la ubicación de los certificados de seguridad.
+
+Configuración aplicada:
+
+![named.conf.local](images/2.3-nginx/4-conf.JPG)
+
+# 4.1 Mapeo de puertos y montaje de volúmenes
+Se ejecutó el contenedor Nginx mapeando los puertos HTTP (80) y HTTPS (443), y montando los volúmenes necesarios para la configuración, los certificados y el contenido web.
+
+Comando de ejecución (PowerShell):
+
+![named.conf.local](images/2.3-nginx/4.1-comando.JPG)
+
+Se sustituye el default.conf del contenedor por nuestro archivo personalizado enrique.test.conf.
+Se montan cert.pem y key.pem en las rutas especificadas en la directiva ssl_certificate y ssl_certificate_key de Nginx.
+
+Accedemos a https://enrique.test. El navegador mostró la advertencia de certificado autofirmado (esperado) y, tras aceptarla, cargó el sitio web correctamente mediante conexión segura.
+Usé firefox porque en Chrome acepté el mensaje sin querer antes de sacarle foto.
+
+![named.conf.local](images/2.3-nginx/4.1-advertencia.JPG)
+
+![named.conf.local](images/2.3-nginx/4.1-permitido.JPG)
+
+## 4.2 Docker Compose
+Se migró la configuración a un archivo Docker Compose. Esto permite definir la infraestructura como código de manera reproducible.
+
+Fichero docker-compose.yml creado:
+
+![named.conf.local](images/2.3-nginx/4.2-fichero.JPG)
+
+Se levantó el servicio con el comando:
+
+![named.conf.local](images/2.3-nginx/4.2-compose.JPG)
+
+Se verificó el estado del contenedor con docker-compose ps y se comprobó nuevamente el acceso vía navegador a https://enrique.test, confirmando que el sitio responde correctamente mediante HTTPS con los certificados configurados.
+
+![named.conf.local](images/2.3-nginx/4.2-advertencia.JPG)
+
+
+# Práctica 2.3: Acceso seguro con Nginx (VM)
+En esta práctica se configurará el servidor Nginx en la máquina virtual para soportar conexiones seguras HTTPS mediante certificados autofirmados.
+
+## 2.1 Nombre de servidor
+Se configuró la resolución DNS local y el nombre del servidor en Nginx para admitir el dominio principal y el subdominio www.
+Se editó el archivo hosts en Windows para apuntar ambos dominios a la IP de la VM: 192.168.58.10 enrique.test www.enrique.test
+Se modificó el archivo /etc/nginx/sites-available/enrique.test actualizando la directiva server_name:
+
+![named.conf.local](images/2.3-nginx-docker/2.1-conf.JPG)
+
+Se comprobó la sintaxis de la configuración y se recargó el servicio:
+
+![named.conf.local](images/2.3-nginx-docker/2.1-comprobacion.JPG)
+
+## 3. Configuración del cortafuegos (UFW)
+Se configuró el cortafuegos UFW para asegurar el servidor, permitiendo únicamente el tráfico necesario.
+Se permitió el acceso SSH para garantizar la administración remota del servidor.
+Se habilitó el perfil Nginx Full, que permite tráfico tanto en el puerto 80 (HTTP) como en el 443 (HTTPS).
+Se eliminó la regla 'Nginx HTTP' obsoleta para evitar redundancias.
+
+Se activó el cortafuegos y se comprobó su estado:
+
+![named.conf.local](images/2.3-nginx-docker/3-comandos.JPG)
+
+## 4. Generación de certificado autofirmado
+Se generó un certificado SSL autofirmado válido por 365 días para habilitar la conexión segura HTTPS. Se utilizó la herramienta openssl para crear tanto el certificado público como la clave privada.
+
+![named.conf.local](images/2.3-nginx-docker/4.-comando.JPG)
+
+Archivos generados:
+
+Clave privada /etc/ssl/private/enrique.test.key
+
+Certificado /etc/ssl/certs/enrique.test.crt
+
+## 5. Configuración de Nginx con SSL
+Se modificó el archivo de configuración del sitio /etc/nginx/sites-available/enrique.test para habilitar el protocolo HTTPS utilizando los certificados generados.
+
+![named.conf.local](images/2.3-nginx-docker/5.-conf.JPG)
+
+Se comprobó la sintaxis del archivo y se recargó el servicio:
+
+![named.conf.local](images/2.3-nginx-docker/5.-comprobacion.JPG)
+
+## 6. Prueba de funcionamiento
+Comprobaciones finales para verificar el acceso seguro al servidor web.
+
+Se verificó que el archivo hosts del equipo cliente apunta correctamente el dominio al servidor: 192.168.58.10 enrique.test
+
+Al acceder a https://enrique.test, el navegador detectó el cifrado SSL.
+
+![named.conf.local](images/2.3-nginx-docker/6.-intento.JPG)
+
+Tras aceptar el riesgo, el sitio web cargó correctamente mediante el protocolo HTTPS.
+
+![named.conf.local](images/2.3-nginx-docker/6.-valido.JPG)
