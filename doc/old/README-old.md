@@ -814,3 +814,154 @@ Al acceder a https://enrique.test, el navegador detectó el cifrado SSL.
 Tras aceptar el riesgo, el sitio web cargó correctamente mediante el protocolo HTTPS.
 
 ![named.conf.local](images/2.3-nginx-docker/6.-valido.JPG)
+
+# Práctica Tomcat y Maven: Aplicaciones Java
+
+## Instalación de Tomcat
+
+### OpenJDK
+
+Instalaremos el kit de desarrollo de java:
+
+![named.conf.local](images/tomcat-maven/1.png)
+
+### Instalación del paquete
+
+Instalación del servidor de aplicaciones
+
+![named.conf.local](images/tomcat-maven/2.png)
+
+### Creación del grupo
+
+Crearemos un grupo de usuarios para tomcat9
+
+![named.conf.local](images/tomcat-maven/3.png)
+
+### Creación del usuario
+
+Crearemos un usuario para el servicio
+
+![named.conf.local](images/tomcat-maven/4.png)
+
+### Arranque y comprobación del servicio
+
+Arrancaremos el servicio tomcat9
+
+![named.conf.local](images/tomcat-maven/5.png)
+
+Comprobamos que el servicio funciona correctamente
+
+![named.conf.local](images/tomcat-maven/6.png)
+
+### Accederemos al servicio en http://192.168.58.10:8080/
+
+![named.conf.local](images/tomcat-maven/7.png)
+
+### Acceso remoto
+
+Tomcat no permite por defecto que se acceda a algunos paneles de control desde un ordenador distinto al localhost. Para solucionarlo sustituiremos el fichero context.xml del directorio /usr/share/tomcat9-admin/host-manager/META-INF/ por el siguiente:
+
+![named.conf.local](images/tomcat-maven/8.png)
+
+Recargaremos el servidor:
+
+![named.conf.local](images/tomcat-maven/9.png)
+
+## Configuración de la administración
+
+### Usuarios y permisos
+
+Definimos el usuario con acceso a Tomcat. Para ello, es necesario editar el archivo de configuración /etc/tomcat9/tomcat-users.xml.
+
+![named.conf.local](images/tomcat-maven/10.png)
+
+### Instalación del administrador web
+
+Ahora, instalemos el administrador web y el administrador de host de Tomcat ejecutando el siguiente comando.
+
+sudo apt install -y tomcat9-admin
+
+### Acceso a los paneles de administración
+
+Accedemos a http://192.168.58.10:8080/manager/html e introducimos el nombre de usuario y la contraseña que escribí al editar el archivo /etc/tomcat9/tomcat-users.xml.
+
+![named.conf.local](images/tomcat-maven/11.png)
+
+Ahora accedemos a http://192.168.58.10:8080/host-manager/html para verificar el Administrador de host virtual Tomcat; escribimos el nombre de usuario y la contraseña cuando nos lo soliciten.
+
+![named.conf.local](images/tomcat-maven/12.png)
+
+## Despliegue manual mediante GUI
+
+Realizaremos el despliegue manual de una aplicación ya previamente empaquetada en formato WAR.
+
+![named.conf.local](images/tomcat-maven/13.png)
+
+## Despliegue con Maven
+
+### Instalación de Maven
+
+Para instalar Maven en nuestro Debian usaremos:
+
+![named.conf.local](images/tomcat-maven/14.png)
+
+### Configuración de Maven
+
+Para poder realizar despliegues en nuestro Tomcat previamente instalado, necesitamos realizar la configuración adecuada para Maven.
+
+#### Roles
+
+![named.conf.local](images/tomcat-maven/15.png)
+
+#### settings.xml
+
+![named.conf.local](images/tomcat-maven/16.png)
+
+#### Generar una aplicación
+
+Generaremos una aplicación de ejemplo en nuestro directorio personal:
+
+![named.conf.local](images/tomcat-maven/17.png)
+
+#### POM
+
+Ahora debemos modificar el POM del proyecto para que haga referencia a que el despliegue se realice con el plugin de Maven para Tomcat.
+
+![named.conf.local](images/tomcat-maven/18.png)
+
+![named.conf.local](images/tomcat-maven/19.png)
+
+#### Despliegue
+
+Tras generar esta aplicación, los comandos finales que se utilizan en Maven para desplegar son:
+
+![named.conf.local](images/tomcat-maven/20.png)
+
+![named.conf.local](images/tomcat-maven/21.png)
+
+## Tarea
+
+### 1. Instalación 
+Primero, descargo el código y me muevo a la rama correcta:
+
+![named.conf.local](images/tomcat-maven/22.png)
+
+### 2. Configurar el pom.xml del Juego
+
+Este proyecto viene con su propio archivo pom.xml, pero no sabe a dónde debe enviarse. Hay que editarlo para añadir el plugin de Tomcat, igual que hice con la aplicación de prueba.
+
+![named.conf.local](images/tomcat-maven/23.png)
+
+### 3. Ejecutar el Despliegue
+
+Una vez guardado el archivo, ejecuta el comando desde la carpeta rock-paper-scissors:
+
+![named.conf.local](images/tomcat-maven/24.png)
+
+La aplicación /juego aparece en la lista.
+
+![named.conf.local](images/tomcat-maven/25.png)
+
+Interfaz del juego.
+
+![named.conf.local](images/tomcat-maven/26.png)
