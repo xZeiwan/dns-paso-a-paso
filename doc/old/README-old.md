@@ -965,3 +965,179 @@ La aplicación /juego aparece en la lista.
 Interfaz del juego.
 
 ![named.conf.local](images/tomcat-maven/26.png)
+
+
+# Práctica Despliegue de una aplicación Python con Flask y Gunicorn
+
+## Prerrequisitos
+
+Necesitaremos un servidor Debian con los siguientes paquetes instalados:
+Nginx
+Gunicorn
+Pipenv
+
+![named.conf.local](images/PythonConFlask-Gunicorn/1.png)
+
+![named.conf.local](images/PythonConFlask-Gunicorn/2.png)
+
+![named.conf.local](images/PythonConFlask-Gunicorn/3.png)
+
+## Despliegue
+
+Instalamos el gestor de paquetes de Python pip:
+
+![named.conf.local](images/PythonConFlask-Gunicorn/4.png)
+
+Instalamos el paquete pipenv para gestionar los entornos virtuales:
+
+![named.conf.local](images/PythonConFlask-Gunicorn/5.png)
+
+Y comprobamos que está instalado correctamente mostrando su versión:
+
+![named.conf.local](images/PythonConFlask-Gunicorn/6.png)
+
+Después instalaremos el paquete python-dotenv para cargar las variables de entorno.
+
+![named.conf.local](images/PythonConFlask-Gunicorn/7.png)
+
+Creamos el directorio en el que almacenaremos nuestro proyecto:
+
+![named.conf.local](images/PythonConFlask-Gunicorn/8.png)
+
+Al crearlo con sudo, los permisos pertenecen a root, por lo que hay que cambiarlo para que el dueño sea nuestro usuario y pertenezca al grupo www-data, el usuario usado por defecto por el servidor web para ejecutarse:
+
+![named.conf.local](images/PythonConFlask-Gunicorn/9.png)
+
+Establecemos los permisos adecuados a este directorio, para que pueda ser leído por todo el mundo:
+
+![named.conf.local](images/PythonConFlask-Gunicorn/10.png)
+
+Dentro del directorio de nuestra aplicación, creamos un archivo oculto .env que contendrá las variables de entorno necesarias. Editamos el archivo y añadimos las variables, indicando cuál es el archivo .py de la aplicación y el entorno, que en nuestro caso será producción:
+
+![named.conf.local](images/PythonConFlask-Gunicorn/11.png)
+
+Iniciamos ahora nuestro entorno virtual. Pipenv cargará las variables de entorno desde el fichero .env de forma automática:
+
+![named.conf.local](images/PythonConFlask-Gunicorn/12.png)
+
+Usamos pipenv install flask gunicorn para instalar las dependencias necesarias para nuestro proyecto:
+
+![named.conf.local](images/PythonConFlask-Gunicorn/13.png)
+
+Vamos ahora a crear la aplicación Flask más simple posible, a modo de PoC (proof of concept o prueba de concepto). El archivo que contendrá la aplicación propiamente dicha será application.py y wsgi.py se encargará únicamente de iniciarla y dejarla corriendo:
+
+![named.conf.local](images/PythonConFlask-Gunicorn/14.png)
+
+Tras crear los archivos, los editamos.
+
+![named.conf.local](images/PythonConFlask-Gunicorn/15.png)
+
+![named.conf.local](images/PythonConFlask-Gunicorn/16.png)
+
+Corremos ahora nuestra aplicación a modo de comprobación con el servidor web integrado de Flask. Si especificamos la dirección 0.0.0.0 lo que le estamos diciendo al servidor es que escuche en todas sus interfaces, si las tuviera:
+
+![named.conf.local](images/PythonConFlask-Gunicorn/17.png)
+
+Ahora podremos acceder a la aplicación desde nuestro ordenador, nuestra máquina anfitrión, introduciendo en un navegador web: http://192.168.58.10:5000/ aparecerá App desplegada.
+
+![named.conf.local](images/PythonConFlask-Gunicorn/18.png)
+
+Tras la comprobación, paramos el servidor con CTRL+C. Comprobemos ahora que Gunicorn funciona correctamente también. Si os ha funcionado el servidor de desarrollo de Flask, podéis usar el comando gunicorn --workers 4 --bind 0.0.0.0:5000 wsgi:app para probar que la alicación funciona correctamente usando Gunicorn, accediendo con vuestro navegador de la misma forma que en el paso anterior:
+
+![named.conf.local](images/PythonConFlask-Gunicorn/19.png)
+
+![named.conf.local](images/PythonConFlask-Gunicorn/20.png)
+
+Todavía dentro de nuestro entorno virtual, debemos tomar nota de cual es el path o ruta desde la que se ejecuta gunicorn para poder configurar más adelante un servicio del sistema. Podemos averigurarlo así:
+
+![named.conf.local](images/PythonConFlask-Gunicorn/21.png)
+
+Puesto que ya debemos tener instalado Nginx en nuestro sistema, lo iniciamos y comprobamos que su estado sea activo:
+
+![named.conf.local](images/PythonConFlask-Gunicorn/22.png)
+
+Ya fuera de nuestro entorno virtual, crearemos un archivo para que systemd corra Gunicorn como un servicio del sistema más:
+
+![named.conf.local](images/PythonConFlask-Gunicorn/23.png)
+
+Informaremos a systemd que hay un nuevo servicio:
+
+![named.conf.local](images/PythonConFlask-Gunicorn/24.png)
+
+Ahora, como cada vez que se crea un servicio nuevo de systemd, se habilita y se inicia:
+
+![named.conf.local](images/PythonConFlask-Gunicorn/25.png)
+
+Creamos un archivo con el nombre de nuestra aplicación y dentro estableceremos la configuración para ese sitio web. El archivo debe estar en /etc/nginx/sites-available/app.conf y tras ello lo editamos para que quede:
+
+![named.conf.local](images/PythonConFlask-Gunicorn/26.png)
+
+Ahora debemos crear un link simbólico del archivo de sitios webs disponibles al de sitios web activos:
+
+![named.conf.local](images/PythonConFlask-Gunicorn/27.png)
+
+Y nos aseguramos de que se ha creado dicho link simbólico:
+
+![named.conf.local](images/PythonConFlask-Gunicorn/28.png)
+
+Nos aseguramos de que la configuración de Nginx no contiene errores, reiniciamos Nginx y comprobamos que se estado es activo:
+
+![named.conf.local](images/PythonConFlask-Gunicorn/29.png)
+
+![named.conf.local](images/PythonConFlask-Gunicorn/30.png)
+
+Ya no podremos acceder por IP a nuestra aplicación ya que ahora está siendo servida por Gunicorn y Nginx, necesitamos acceder por su server_name. Puesto que aún no hemos tratado con el DNS, vamos a editar el archivo /etc/hosts de nuestra máquina anfitriona para que asocie la IP de la máquina virtual, a nuestro server_name.
+
+Este archivo, en Linux, está en /etc/hosts y en Windows en C:\Windows\System32\drivers\etc\hosts
+
+Deberemos añadirle la línea:
+
+![named.conf.local](images/PythonConFlask-Gunicorn/31.png)
+
+El último paso es comprobar que todo el despliegue se ha realizado de forma correcta y está funcionando, para ello accedemos desde nuestra máquina anfitrión a http://app.izv/ o http://www.app.izv/
+
+![named.conf.local](images/PythonConFlask-Gunicorn/32.png)
+
+## Tarea de ampliación
+
+Ajustamos los permisos igual que en la práctica anterior:
+
+![named.conf.local](images/PythonConFlask-Gunicorn/33.png)
+
+Entramos en la carpeta e instalamos lo necesario. Aquí usamos requirements.txt.
+
+![named.conf.local](images/PythonConFlask-Gunicorn/34.png)
+
+Necesitamos crear el archivo wsgi.py que importe la aplicación, igual que hicimos antes.
+
+![named.conf.local](images/PythonConFlask-Gunicorn/35.png)
+
+![named.conf.local](images/PythonConFlask-Gunicorn/36.png)
+
+Dentro del entorno virtual (pipenv shell), averigua la ruta exacta para este nuevo proyecto:
+
+![named.conf.local](images/PythonConFlask-Gunicorn/37.png)
+
+Vamos a crear un servicio nuevo. No podemos llamarlo flask_app porque ese nombre ya existe. Lo llamaremos azure_app.
+
+![named.conf.local](images/PythonConFlask-Gunicorn/38.png)
+
+Activamos el servicio:
+
+![named.conf.local](images/PythonConFlask-Gunicorn/39.png)
+
+Creamos un nuevo archivo de configuración para este sitio. Usaremos el dominio azure.izv.
+
+![named.conf.local](images/PythonConFlask-Gunicorn/40.png)
+
+Activamos el sitio y reiniciamos Nginx:
+
+![named.conf.local](images/PythonConFlask-Gunicorn/41.png)
+
+Editamos el archivo hosts y añadimos la nueva línea:
+
+![named.conf.local](images/PythonConFlask-Gunicorn/42.png)
+
+Probamos si funciona:
+
+![named.conf.local](images/PythonConFlask-Gunicorn/43.png)
